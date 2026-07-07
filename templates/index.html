@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>GEU Scholarship Calculator</title>
+
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"/>
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:'Segoe UI',sans-serif;
+}
+
+body{
+min-height:100vh;
+display:flex;
+justify-content:center;
+align-items:center;
+padding:20px;
+
+background:linear-gradient(
+135deg,
+#0f172a,
+#1e293b,
+#334155,
+#1e40af
+);
+
+background-size:400% 400%;
+animation:bgMove 12s ease infinite;
+}
+
+@keyframes bgMove{
+0%{background-position:0% 50%;}
+50%{background-position:100% 50%;}
+100%{background-position:0% 50%;}
+}
+
+.card{
+
+width:100%;
+max-width:800px;
+
+padding:35px;
+
+border-radius:25px;
+
+background:rgba(255,255,255,0.08);
+
+backdrop-filter:blur(20px);
+
+box-shadow:
+0 8px 32px rgba(0,0,0,.35);
+
+color:white;
+}
+
+h1{
+text-align:center;
+margin-bottom:30px;
+font-size:32px;
+}
+
+label{
+display:block;
+margin-top:15px;
+margin-bottom:8px;
+font-weight:600;
+}
+
+input,
+textarea{
+
+width:100%;
+padding:14px;
+
+border:none;
+outline:none;
+
+border-radius:12px;
+
+font-size:16px;
+}
+
+textarea{
+resize:vertical;
+min-height:120px;
+}
+
+button{
+
+width:100%;
+padding:15px;
+
+margin-top:25px;
+
+border:none;
+
+border-radius:12px;
+
+background:#2563eb;
+
+color:white;
+
+font-size:18px;
+
+font-weight:bold;
+
+cursor:pointer;
+
+transition:.3s;
+}
+
+button:hover{
+background:#1d4ed8;
+transform:translateY(-2px);
+}
+
+.loader{
+
+display:none;
+
+margin:30px auto;
+
+width:70px;
+height:70px;
+
+border:7px solid rgba(
+255,
+255,
+255,
+0.2
+);
+
+border-top:7px solid white;
+
+border-radius:50%;
+
+animation:spin 1s linear infinite;
+}
+
+@keyframes spin{
+100%{
+transform:rotate(360deg);
+}
+}
+
+.result{
+
+display:none;
+
+margin-top:25px;
+
+padding:25px;
+
+border-radius:20px;
+
+background:rgba(
+255,
+255,
+255,
+0.08
+);
+
+animation:fadeIn .5s ease;
+}
+
+@keyframes fadeIn{
+
+from{
+opacity:0;
+transform:translateY(20px);
+}
+
+to{
+opacity:1;
+transform:translateY(0);
+}
+
+}
+
+.percent-box{
+
+text-align:center;
+
+font-size:42px;
+
+font-weight:bold;
+
+margin-bottom:15px;
+}
+
+.result-title{
+
+text-align:center;
+
+font-size:22px;
+
+margin-bottom:10px;
+}
+
+.scholarship-box{
+
+text-align:center;
+
+font-size:55px;
+
+font-weight:bold;
+
+color:#22c55e;
+}
+
+.select2-container{
+width:100% !important;
+}
+
+.select2-container--default .select2-selection--single{
+
+height:52px !important;
+
+border-radius:12px !important;
+
+border:none !important;
+
+padding-top:10px !important;
+
+font-size:16px !important;
+}
+
+.select2-search__field{
+padding:10px !important;
+}
+
+.footer{
+
+margin-top:20px;
+
+text-align:center;
+
+font-size:13px;
+
+opacity:.8;
+}
+
+.marks-info{
+
+margin-top:8px;
+
+font-size:13px;
+
+opacity:.8;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="card">
+
+<h1>🎓 GEU Scholarship Calculator</h1>
+
+<label>
+Enter Marks (Space Se Separate Kare)
+</label>
+
+<textarea
+id="marks"
+placeholder="Example: 51 46 32 78 90"></textarea>
+
+<div class="marks-info">
+Example: 51 46 32 78 90
+</div>
+
+<label>
+Select Course
+</label>
+
+<select id="course">
+
+{% for c in courses %}
+
+<option value="{{c}}">
+{{c}}
+</option>
+
+{% endfor %}
+
+</select>
+
+<button onclick="calculateScholarship()">
+Calculate Scholarship
+</button>
+
+<div
+class="loader"
+id="loader">
+</div>
+
+<div
+class="result"
+id="result">
+</div>
+
+<div class="footer">
+Powered By GEU Scholarship Engine
+</div>
+
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+
+$(document).ready(function(){
+
+$('#course').select2({
+placeholder:"🔍 Search Course",
+width:'100%'
+});
+
+});
+
+async function calculateScholarship(){
+
+let marks =
+document.getElementById(
+"marks"
+).value.trim();
+
+if(marks===""){
+
+alert(
+"Please Enter Marks"
+);
+
+return;
+}
+
+document.getElementById(
+"loader"
+).style.display =
+"block";
+
+document.getElementById(
+"result"
+).style.display =
+"none";
+
+try{
+
+const response =
+await fetch(
+"/calculate",
+{
+method:"POST",
+
+headers:{
+"Content-Type":
+"application/json"
+},
+
+body:JSON.stringify({
+
+marks:
+marks,
+
+course:
+document.getElementById(
+"course"
+).value
+
+})
+}
+);
+
+const data =
+await response.json();
+
+document.getElementById(
+"loader"
+).style.display =
+"none";
+
+document.getElementById(
+"result"
+).style.display =
+"block";
+
+document.getElementById(
+"result"
+).innerHTML = `
+
+<div class="percent-box">
+${data.percentage}%
+</div>
+
+<div class="result-title">
+Calculated Percentage
+</div>
+
+<br>
+
+<div class="result-title">
+Eligible Scholarship Amount
+</div>
+
+<div class="scholarship-box">
+₹ ${Number(data.scholarship).toLocaleString()}
+</div>
+
+`;
+
+}
+catch(error){
+
+document.getElementById(
+"loader"
+).style.display =
+"none";
+
+alert(
+"Something went wrong"
+);
+
+console.log(error);
+
+}
+
+}
+
+</script>
+
+</body>
+
+</html>
